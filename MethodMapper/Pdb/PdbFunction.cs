@@ -19,8 +19,6 @@
 
 namespace Cqse.ConQAT.Dotnet.Bummer
 {
-    using Common.Util.Runtime;
-
     /// <summary>
     /// Wraps a Microsoft.Cci.Pdb.PdbFunction.
     /// </summary>
@@ -52,13 +50,19 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            return ObjectUtils.Equals(this, obj, a => a.Token, a => a.SourceFilename, a => a.StartLine, a => a.EndLine);
+            if (this == obj) {
+                return true;
+            }
+            if (this == null || obj == null) {
+                return false;
+            }
+            return Token == obj.Token && SourceFilename == obj.SourceFilename && StartLine == obj.StartLine && EndLine == obj.EndLine;
         }
 
         /// <inheritdoc/>
         public override int GetHashCode()
         {
-            return ObjectUtils.GetHashCode(this.Token, this.SourceFilename, this.StartLine, this.EndLine);
+            return new { Token, SourceFilename, StartLine, EndLine }.GetHashCode();
         }
     }
 }

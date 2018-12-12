@@ -20,8 +20,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Fclp;
-using Newtonsoft.Json;
 using System.Linq;
 
 namespace Cqse.ConQAT.Dotnet.Bummer
