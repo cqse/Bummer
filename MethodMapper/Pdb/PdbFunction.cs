@@ -50,13 +50,12 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            if (this == obj) {
-                return true;
-            }
-            if (this == null || obj == null) {
+            PdbFunction other = obj as PdbFunction;
+            if (other == null) {
                 return false;
             }
-            return Token == obj.Token && SourceFilename == obj.SourceFilename && StartLine == obj.StartLine && EndLine == obj.EndLine;
+
+            return Token == other.Token && SourceFilename == other.SourceFilename && StartLine == other.StartLine && EndLine == other.EndLine;
         }
 
         /// <inheritdoc/>

@@ -119,7 +119,7 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         /// <summary>
         /// Mono Cecil Pdb assembly.
         /// </summary>
-        private static readonly Assembly MonoCecilPdb = typeof(Mono.Cecil.Pdb.PdbReader).Assembly;
+        private static readonly Assembly MonoCecilPdb = typeof(Mono.Cecil.Pdb.NativePdbReaderProvider).Assembly;
 
         /// <summary>
         /// MS PdbFile type as gathered via reflection.
