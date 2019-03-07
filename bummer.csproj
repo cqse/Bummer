@@ -4,7 +4,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>Cqse.Bummer</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Authors>CQSE GmbH</Authors>
     <Company>CQSE GmbH</Company>
   </PropertyGroup>

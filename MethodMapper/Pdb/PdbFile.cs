@@ -44,7 +44,7 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         /// Marks lines that are "hidden" from the compiler. These lines should be ignored when caluclating
         /// the start and end line of a function.
         /// </summary>
-        private const uint CompilerHiddenLine = 16707566;
+        public const uint CompilerHiddenLine = 16707566;
 
         /// <summary>
         /// Namespace of all Pdb related classes within the Microsoft Pdb assembly.
