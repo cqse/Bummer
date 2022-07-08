@@ -29,12 +29,12 @@ namespace Cqse.ConQAT.Dotnet.Bummer
     /// <para>
     /// Adapter for access to Microsoft.Cci.Pdb.PdbFiles.
     /// Uses reflection to read Pdb files and load the enclosed functions.
-    /// Wraps these functions in a corresponding local wrapper class 
+    /// Wraps these functions in a corresponding local wrapper class
     /// <see cref="PdbFunction"/>.
     /// </para>
     /// <para>
-    /// Wrapping access to the MS class is necessary, because the methods 
-    /// we need to use to interpret Pdb files are marked as internal within the 
+    /// Wrapping access to the MS class is necessary, because the methods
+    /// we need to use to interpret Pdb files are marked as internal within the
     /// MS assembly. Hence they cannot be accessed using Mono Cecil directly.
     /// </para>
     /// </summary>
@@ -119,7 +119,7 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         /// <summary>
         /// Mono Cecil Pdb assembly.
         /// </summary>
-        private static readonly Assembly MonoCecilPdb = typeof(Mono.Cecil.Pdb.NativePdbReaderProvider).Assembly;
+        private static readonly Assembly MonoCecilPdb = typeof(Mono.Cecil.Pdb.PdbReaderProvider).Assembly;
 
         /// <summary>
         /// MS PdbFile type as gathered via reflection.
@@ -127,7 +127,7 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         private static readonly Type PdbFileType = MonoCecilPdb.GetType(PdbFileTypeName);
 
         /// <summary>
-        /// Method info for the LoadFunctions methods of MS PdbFile type 
+        /// Method info for the LoadFunctions methods of MS PdbFile type
         /// as gathered via reflection.
         /// </summary>
         private static readonly MethodInfo PdbFileLoadFunctionsMethodInfo =
@@ -181,7 +181,7 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         }
 
         /// <summary>
-        /// Wraps the specified MS PdbFunction object into an object of type 
+        /// Wraps the specified MS PdbFunction object into an object of type
         /// <see cref="PdbFunction"/>.
         /// </summary>
         private static PdbFunction WrapPdbFunction(object pdbFunction)
@@ -203,9 +203,9 @@ namespace Cqse.ConQAT.Dotnet.Bummer
         /// <summary>
         /// Adds the specified PdbFunction lines to the provided function wrapper.
         /// </summary>
-        /// <param name="wrappedPdbFunction">The wrapped PdbFunction, the lines 
+        /// <param name="wrappedPdbFunction">The wrapped PdbFunction, the lines
         /// should be added to.</param>
-        /// <param name="pdbFunctionLines">A PdbLines object containing the 
+        /// <param name="pdbFunctionLines">A PdbLines object containing the
         /// source lines of a PdbFunction.</param>
         private static void AddPdbFunctionLines(PdbFunction wrappedPdbFunction, object pdbFunctionLines)
         {

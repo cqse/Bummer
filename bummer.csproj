@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <PackageReference Include="Mono.Cecil" Version="0.10.1" />
+    <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="5.0.0" />
   </ItemGroup>
 
 </Project>

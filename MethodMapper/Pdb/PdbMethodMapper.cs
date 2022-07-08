@@ -17,51 +17,135 @@
 // </license>
 //------------------------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Cqse.ConQAT.Dotnet.Bummer
 {
-    /// <summary>
-    /// Method mapper for Microsoft .NET symbol files (.pdb).
-    /// </summary>
-    public class PdbMethodMapper : MethodMapperBase
-    {
-        /// <summary>
-        /// File extension of Pdb files.
-        /// </summary>
-        private const string PdbExtension = ".pdb";
+	/// <summary>
+	/// Method mapper for Microsoft .NET symbol files (.pdb).
+	/// </summary>
+	public class PdbMethodMapper : MethodMapperBase
+	{
+		/// <summary>
+		/// File extension of Pdb files.
+		/// </summary>
+		private const string PdbExtension = ".pdb";
 
-        /// <inheritdoc/>
-        protected override string GetSupportedExtension() => PdbExtension;
+		/// <summary>
+		/// First bytes (as string) of a portable PDB.
+		/// </summary>
+		private const string PortablePdbMagic = "BSJB";
 
-        /// <inheritdoc/>
-        protected override IEnumerable<MethodMapping> ReadMethodMappings(string pathToSymbolFile)
-        {
-            using (FileStream fileStream = File.OpenRead(pathToSymbolFile))
-            {
-                IEnumerable<PdbFunction> pdbFunctions = PdbFile
-                    .LoadPdbFunctions(fileStream);
+		/// <summary>
+		/// First bytes (as string) of a native PDB (that is supported by Cecil).
+		/// </summary>
+		private const string NativePdbMagic = "Microsoft C/C++ MSF 7.00";
 
-                foreach (PdbFunction pdbFunction in pdbFunctions)
-                {
-                    yield return GetMapping(pdbFunction);
-                }
-            }
-        }
+		/// <summary>
+		/// The different string representations of magic bytes of known PDB types.
+		/// </summary>
+		private static readonly string[] MagicTypes = { NativePdbMagic, PortablePdbMagic };
 
-        /// <summary>
-        /// Provides the method mapping for the specified Pdb method.
-        /// </summary>
-        private static MethodMapping GetMapping(PdbFunction pdbFunction)
-        {
-            return new MethodMapping()
-            { 
-                MethodToken = pdbFunction.Token,
-                SourceFile = pdbFunction.SourceFilename,
-                StartLine = pdbFunction.StartLine,
-                EndLine = pdbFunction.EndLine
-            };
-        }
-    }
+		/// <inheritdoc/>
+		protected override string GetSupportedExtension() => PdbExtension;
+
+		/// <inheritdoc/>
+		protected override IEnumerable<MethodMapping> ReadMethodMappings(string pathToSymbolFile)
+		{
+			string pdbType = DetectPdbType(pathToSymbolFile);
+			using (Stream fileStream = File.OpenRead(pathToSymbolFile))
+			{
+				switch (pdbType)
+				{
+					case NativePdbMagic:
+						return this.ReadNativePdbMethodMappings(fileStream).ToList();
+					case PortablePdbMagic:
+						return this.ReadPortablePdbMappings(fileStream).ToList();
+					default:
+						throw new ArgumentException($"PDB file {pathToSymbolFile} not supported. Unknown binary header.", nameof(pathToSymbolFile));
+				}
+
+			}
+		}
+
+		/// <summary>
+		/// Reads method mappings for portable PDB files.
+		/// </summary>
+		internal IEnumerable<MethodMapping> ReadPortablePdbMappings(Stream fileStream)
+		{
+			MetadataReader metadataReader = MetadataReaderProvider.FromPortablePdbStream(fileStream, MetadataStreamOptions.PrefetchMetadata).GetMetadataReader(MetadataReaderOptions.ApplyWindowsRuntimeProjections);
+			foreach (MethodDebugInformationHandle methodHandle in metadataReader.MethodDebugInformation)
+			{
+				MethodDebugInformation debugInfo = metadataReader.GetMethodDebugInformation(methodHandle);
+				var sequencePoints = debugInfo.GetSequencePoints().Where(point => !point.IsHidden).ToList();
+				if (sequencePoints.Count == 0)
+				{
+					// If there are no visible lines we cannot map the method to source code, skip.
+					continue;
+				}
+
+				DocumentHandle docHandle = sequencePoints.First().Document;
+				if (docHandle.IsNil)
+				{
+					docHandle = debugInfo.Document;
+				}
+
+				Document doc = metadataReader.GetDocument(docHandle);
+
+				yield return new MethodMapping
+				{
+					MethodToken = (uint) MetadataTokens.GetToken(methodHandle.ToDefinitionHandle()),
+					SourceFile = metadataReader.GetString(doc.Name),
+					StartLine = (uint)sequencePoints.First().StartLine,
+					EndLine = (uint)sequencePoints.Last().EndLine,
+				};
+			}
+		}
+
+		/// <summary>
+		/// Reads method mappings for traditional (native) PDB files.
+		/// </summary>
+		internal IEnumerable<MethodMapping> ReadNativePdbMethodMappings(Stream fileStream)
+		{
+			IEnumerable<PdbFunction> pdbFunctions = PdbFile.LoadPdbFunctions(fileStream);
+			foreach (PdbFunction pdbFunction in pdbFunctions)
+			{
+				yield return new MethodMapping
+				{
+					MethodToken = pdbFunction.Token,
+					SourceFile = pdbFunction.SourceFilename,
+					StartLine = pdbFunction.StartLine,
+					EndLine = pdbFunction.EndLine
+				};
+			}
+		}
+
+		/// <summary>
+		/// Returns the magic string that denotes the type of PDB that the file represents, or null for an unknown type.
+		/// </summary>
+		private static string DetectPdbType(string pdbFile)
+		{
+
+			byte[] magicBytes = new byte[MagicTypes.Max(magic => magic.Length)];
+			using (FileStream pdbStream = File.OpenRead(pdbFile))
+			{
+				pdbStream.Read(magicBytes, 0, magicBytes.Length);
+			}
+
+			foreach (string magicString in MagicTypes)
+			{
+				if (magicString.Zip(magicBytes, (magicChar, magicByte) => magicChar == magicByte).All(result => result == true))
+				{
+					return magicString;
+				}
+			}
+
+			return null;
+		}
+	}
 }
